@@ -16,6 +16,13 @@
 [BITS 16]
 [ORG 0x8000]
 
+;load_kernel:
+    mov si, dap
+    mov ah, 0x42        ; extended read
+    mov dl, 0x80        ; first hard disk
+    int 0x13
+    jc disk_error
+    
 
 
 
@@ -29,10 +36,6 @@ and al, 0xFE
 out 0x92, al
 after_a20:
 ; 
-
-in al, 0x92
-call print_hex16
-;should see 0002 for a20 enabled
 
 
 
@@ -50,66 +53,21 @@ jmp code_seg:start_protected_mode
 
 
 
+disk_error:
+    cli
+.hang:
+    hlt
+    jmp .hang
 
 
-
-
-
-
-
-; -----------------------------
-; print_hex16
-; Prints AX as 4 hex digits
-; Uses BIOS int 10h teletype
-; -----------------------------
-print_hex16:
-    pusha               ; save registers
-
-    mov bx, ax          ; copy AX into BX (so we can shift it)
-
-    mov cx, 4           ; 4 hex digits
-.hex_loop:
-    mov ax, bx
-    shr ax, 12          ; top nibble into low bits (bits 12-15)
-
-    call print_nibble
-
-    shl bx, 4           ; shift next nibble into top position
-    loop .hex_loop
-
-    popa
-    ret
-
-
-; -----------------------------
-; print_nibble
-; input: AL = value 0-15
-; prints one hex digit
-; -----------------------------
-print_nibble:
-    and al, 0x0F        ; keep only bottom 4 bits
-
-    cmp al, 9
-    jbe .digit
-
-    add al, 55          ; 'A' - 10 = 65 - 10 = 55
-    jmp .print
-
-.digit:
-    add al, '0'
-
-.print:
-    mov ah, 0x0E
-    int 0x10
-    ret
 
 
 gdt_descriptor:
     dw gdt_end - gdt_start -1 ; size
     dd gdt_start
 
-code_seg: equ code_descriptor - gdt_start
-data_seg: equ data_descriptor - gdt_start
+
+
 
 
 
@@ -122,20 +80,16 @@ data_seg: equ data_descriptor - gdt_start
 
 [bits 32]
 start_protected_mode:
-   
-call clear_screen
-mov eax, 0xDEADBEEF
-call write_reg
-
- 
-
-mov al, 'A'
-    mov ah, 0x0f
-    mov [0x000B87D0], ax
-
-hlt
 
 ;setup paging for long mode
+
+
+
+  ; copy from 0x10000 → 0x100000
+    mov esi, 0x10000
+    mov edi, 0x100000
+    mov ecx, 32 * 512       ; same number of sectors * 512 bytes
+    rep movsb
 
 
 PML4_TABLE equ 0x1000
@@ -143,7 +97,7 @@ PDPT_TABLE equ 0x2000
 PD_TABLE   equ 0x3000
 
 call setup_paging
-
+call enable_long_mode
 
 
 
@@ -208,58 +162,45 @@ enable_long_mode:
     or eax, 1 << 31         ; set PG bit (bit 31)
     mov cr0, eax
 
+
+
+   
     ; 5) Far jump into 64-bit mode
-    jmp CODE64_SEL:long_mode_entry
+    jmp code_seg64:long_mode_entry
+
+
+;__________________________________________________
+;64
+;
+;
+
+[BITS 64]
+long_mode_entry:
+; Now reload the segment registers (CS, DS, SS, etc.) with the appropriate segment selectors...
+ mov ax, data_seg64
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+  
+        ; setup stack
+    mov rsp, 0x90000
+    and rsp, -16            ; 16-byte align (VERY important)
 
 
 
-clear_screen:
-pusha
-mov al, ' '        
-mov ah, 0x07  
-mov ebx, 0xb8000
-mov ecx, 2000
-.clear_loop
-    mov [ebx], ax
-    add ebx, 2
-    loop .clear_loop   
-popa
-ret
+    ; jump to kernel entry (0x100000)
+    mov rax, 0x100000
+
+    jmp rax
+
+.hang:
+    hlt
+    jmp .hang
 
 
-write_reg:
-; input: EAX
-pusha
-
-
-
-
-mov ecx, 8            ; 8 hex digits
-mov ebx, 0xb8000      ; vga fram buffer
-.print_nibble_loop:
-    mov edx, eax
-    shr edx, 28       ; top nibble in lower 4 bits
-    call print_hex_nibble
-    ;mov [ebp -8],ebx 
-    shl eax, 4        ; shift next nibble into top
-    loop .print_nibble_loop
-
-popa    
-ret
-
-print_hex_nibble:
-    and dl, 0x0F
-    cmp dl, 9
-    jbe .digit
-    add dl, 'A' - 10
-    jmp .done
-.digit:
-    add dl, '0'
-.done:
-    mov dh, 0x07
-    mov [ebx], dx
-    add ebx, 2
-    ret
 
 
 ;______________________________________
@@ -286,5 +227,38 @@ gdt_start:
         db 0b10010010; flags
         db 0b11001111; other and last four bits of limit
         db 0
+    code_descriptor64:
+        dw 0x0000           ; limit ignored in 64-bit mode
+        dw 0x0000
+        db 0x00
+        db 0b10011010        ; access: present, ring0, code, readable
+        db 0b10101111        ; flags: gran=1, 32-bit=0, long=1
+        db 0x00
+
+    data_descriptor64:
+        dw 0x0000
+        dw 0x0000
+        db 0x00
+        db 0b10010010        ; access: present, ring0, data, writable
+        db 0b11001111        ; flags okay (ignored mostly)
+        db 0x00
+
+    
 gdt_end:
+
+code_seg: equ code_descriptor - gdt_start
+data_seg: equ data_descriptor - gdt_start
+code_seg64: equ code_descriptor64 - gdt_start
+data_seg64: equ data_descriptor64 - gdt_start
+
+
+
+; Disk Address Packet (16 bytes)
+dap:
+    db 0x10             ; size of packet
+    db 0
+    dw 32               ; number of sectors to read (adjust if needed)
+    dw 0x0000           ; offset
+    dw 0x1000           ; segment (0x1000:0000 = 0x10000)
+    dq 10                ; starting LBA (skip bootloader)
 

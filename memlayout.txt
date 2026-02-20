@@ -1,0 +1,37 @@
+
+mem hex   |mem dec    |    
+0x00000000|0	      |  
+                      | Real Mode IVT (Interrupt Vector Table)      
+0x000003FF|1023	      |       
+0x00000400|1024	      |       
+                      | BDA (BIOS data area)
+0x000004FF|1279	      |      
+0x00000500|1280	      | 
+0x00001000|4096       | PML4_TABLE
+0x00002000|8192       | PDPT_TABLE
+0x00003000|12288      | PD_TABLE
+0x00007BFF|31743      |       
+0x00007C00|31744      |  stage1.asm 
+                      | BootSector        
+0x00007DFF|32255      |           
+0x00007E00|32256      | 
+0x00008000|32768      | Stage2.asm
+0x00010000|65536      |
+0x0007FFFF|524287     |             
+0x00080000|524288     |
+0x00090000|589824     | stack location in long mode          
+0x0009FFFF|655359     |         
+0x000A0000|655360     |
+                      | viedo display memmory
+0x000BFFFF|786431     |             
+0x000C0000|786432     |
+                      | Viedo Bios             
+0x000C7FFF|819199     |             
+0x000C8000|819200     | 
+                      | Bios Expansios            
+0x000EFFFF|983039     |	             
+0x000F0000|983040     |
+                      | Motherboard Bios
+0x000FFFFF|1048575    |
+0x00100000|1048576    | kernel load  
+0x00200000|2097152    | 2MB edge of mapped memmory by bootloader
