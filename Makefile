@@ -10,6 +10,8 @@ IMG = disk.img
 
 KERNEL_ELF = kernel/target/x86_64-unknown-none/release/kernel
 
+RUST_SOURCES := $(shell find kernel/src -name "*.rs")
+
 all: $(IMG)
 
 # --------------------------
@@ -27,7 +29,7 @@ $(STAGE2): bootloader/stage2.asm
 # Build Rust kernel
 # --------------------------
 
-$(KERNEL_ELF):
+$(KERNEL_ELF): $(RUST_SOURCES)
 	cd kernel && $(CARGO) build --release --target x86_64-unknown-none
 
 $(KERNEL): $(KERNEL_ELF)
