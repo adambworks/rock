@@ -1,1 +1,5 @@
 kernel/target
+disk.img
+kernel.bin
+stage1.bin
+stage2.bin
