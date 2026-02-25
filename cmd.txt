@@ -1,0 +1,3 @@
+nm kernel/target/x86_64-unknown-none/release/kernel
+
+llvm-readobj -s kernel/target/x86_64-unknown-none/release/kernel | grep _start

@@ -7,3 +7,10 @@
 - written to the viedo output using bios intrupts in regular 16bit mode
 - setup a basic GDT to enable 32 bit protected mode
 - written to the vga viedo buffer in protected mode
+
+
+## Acknowledgments
+
+This project was built while studying the excellent
+"Writing an OS in Rust" series by Philipp Oppermann:
+https://os.phil-opp.com/
