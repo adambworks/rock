@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 volatile = "0.2.6"
 spin = "0.5.2"
+x86_64 = "0.15.4"
 
 
 [dependencies.lazy_static]
@@ -14,6 +15,7 @@ features = ["spin_no_std"]
 
 [profile.dev]
 panic = "abort"
+debug = true
 
 [profile.release]
 panic = "abort"

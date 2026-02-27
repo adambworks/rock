@@ -88,7 +88,7 @@ start_protected_mode:
   ; copy from 0x10000 → 0x100000
     mov esi, 0x10000
     mov edi, 0x100000
-    mov ecx, 32 * 512       ; same number of sectors * 512 bytes
+    mov ecx, 64 * 512       ; same number of sectors * 512 bytes
     rep movsb
 
 
@@ -232,7 +232,7 @@ gdt_start:
         dw 0x0000
         db 0x00
         db 0b10011010        ; access: present, ring0, code, readable
-        db 0b10101111        ; flags: gran=1, 32-bit=0, long=1
+        db 0b00100000        ; flags: gran=0, 32-bit=0, long=1
         db 0x00
 
     data_descriptor64:
@@ -257,7 +257,7 @@ data_seg64: equ data_descriptor64 - gdt_start
 dap:
     db 0x10             ; size of packet
     db 0
-    dw 32               ; number of sectors to read (adjust if needed)
+    dw 64               ; number of sectors to read (adjust if needed)
     dw 0x0000           ; offset
     dw 0x1000           ; segment (0x1000:0000 = 0x10000)
     dq 10                ; starting LBA (skip bootloader)
