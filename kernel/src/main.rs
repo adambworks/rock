@@ -20,8 +20,9 @@ pub extern "C" fn _start() -> ! {
   //  print!("YAY");
   //  print!("YAYAYAYAY");
     
-
-    x86_64::instructions::interrupts::int3();
+ unsafe {
+        *(0xfffffffffffff as *mut u8) = 42;
+    };
 
     loop {}
 }
@@ -29,5 +30,7 @@ pub extern "C" fn _start() -> ! {
 /// This function is called on panic.
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+    print!("\n{}",_info.message());
+    
     loop {}
 }
