@@ -16,13 +16,13 @@ pub mod drivers;
 #[unsafe(no_mangle)] // don't mangle the name of this function
 pub extern "C" fn _start() -> ! {
  arch::interrupts::init_idt();
- //   println!("Hello World");
-  //  print!("YAY");
-  //  print!("YAYAYAYAY");
+    println!("Hello World");
+    print!("YAY");
+    print!("YAYAYAYAY");
     
- unsafe {
-        *(0xfffffffffffff as *mut u8) = 42;
-    };
+ //unsafe {
+   //     *(0xfffffffffffff as *mut u8) = 42;
+   // };
 
     loop {}
 }
